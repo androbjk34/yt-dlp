@@ -14,7 +14,8 @@ def youtube():
     
     ydl_opts = {
         "quiet": True,
-        "format": "best[ext=m3u8]/best",
+        # Tüm formatları çöz, önce en iyi HLS, yoksa video+audio kombinasyonu, yoksa best
+        "format": "bestvideo+bestaudio/best",
     }
     
     try:
@@ -24,7 +25,7 @@ def youtube():
     except Exception as e:
         return f"Hata: {e}", 500
     
-    # 302 Redirect
+    # 302 redirect IPTV uyumu için
     return redirect(m3u8_url, code=302)
 
 PORT = int(os.environ.get("PORT", 7860))
