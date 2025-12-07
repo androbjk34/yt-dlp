@@ -1,33 +1,34 @@
 from flask import Flask, request, redirect
-import yt_dlp
-import os
+import subprocess
+import sys
 
 app = Flask(__name__)
 
-@app.route("/youtube")
-def youtube():
-    video_id = request.args.get("id")
-    if not video_id:
-        return "Kanal ID gerekli ?id=xxx", 400
-    
-    url = f"https://www.youtube.com/channel/{video_id}/live"
-    
-    ydl_opts = {
-        "quiet": True,
-        # Tüm formatları çöz, önce en iyi HLS, yoksa video+audio kombinasyonu, yoksa best
-        "format": "bestvideo+bestaudio/best",
-    }
-    
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            m3u8_url = info.get("url")
-    except Exception as e:
-        return f"Hata: {e}", 500
-    
-    # 302 redirect IPTV uyumu için
-    return redirect(m3u8_url, code=302)
+@app.route("/youtube.m3u8")
+def youtube_direct():
+    channel_id = request.args.get("id")
+    if not channel_id:
+        return "Kanal ID gerekli", 400
 
-PORT = int(os.environ.get("PORT", 7860))
+    try:
+        live_url = f"https://www.youtube.com/channel/{channel_id}/live"
+
+        # yt-dlp ile canlı yayının gerçek m3u8 linkini al
+        cmd = [sys.executable, "-m", "yt_dlp", "-g", live_url]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return f"Canlı yayın linki alınamadı:\n{result.stderr}", 404
+
+        m3u8_link = result.stdout.strip()
+
+        # Direkt gerçek m3u8 linkine yönlendir
+        return redirect(m3u8_link, code=302)
+
+    except subprocess.TimeoutExpired:
+        return "Zaman aşımı: Canlı yayın linki alınamadı.", 500
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
+    print("YouTube /live Direct Proxy başlatılıyor...")
+    print("TV player link formatı: http://127.0.0.1:7860/youtube.m3u8?id=KANAL_ID")
+    app.run(host="0.0.0.0", port=7860, debug=True)
