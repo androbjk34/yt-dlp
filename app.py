@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, redirect
 import yt_dlp
 import os
 
@@ -24,7 +24,8 @@ def youtube():
     except Exception as e:
         return f"Hata: {e}", 500
     
-    return Response(m3u8_url, mimetype="text/plain")
+    # 302 Redirect
+    return redirect(m3u8_url, code=302)
 
 PORT = int(os.environ.get("PORT", 7860))
 if __name__ == "__main__":
