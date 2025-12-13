@@ -24,10 +24,13 @@ def youtube_direct():
 
         m3u8_link = None
 
-        for f in info.get("formats", []):
-            if f.get("protocol") == "m3u8_native":
-                m3u8_link = f.get("url")
-                break
+for f in info.get("formats", []):
+    if (
+        f.get("protocol") == "m3u8_native"
+        and f.get("height") is None
+    ):
+        m3u8_link = f.get("url")
+        break
 
         if not m3u8_link:
             return "m3u8 bulunamadı", 404
