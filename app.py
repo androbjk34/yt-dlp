@@ -16,33 +16,30 @@ def youtube_direct():
         ydl_opts = {
             "quiet": True,
             "skip_download": True,
-            "nocheckcertificate": True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(live_url, download=False)
 
-        m3u8_link = None
+        # SADECE m3u8 olanları al
+        m3u8s = [
+            f for f in info.get("formats", [])
+            if f.get("protocol") == "m3u8_native" and f.get("height")
+        ]
 
-for f in info.get("formats", []):
-    if (
-        f.get("protocol") == "m3u8_native"
-        and f.get("height") is None
-    ):
-        m3u8_link = f.get("url")
-        break
-
-        if not m3u8_link:
+        if not m3u8s:
             return "m3u8 bulunamadı", 404
 
-        return redirect(m3u8_link, code=302)
+        # EN YÜKSEK ÇÖZÜNÜRLÜK
+        best = max(m3u8s, key=lambda x: x["height"])
+
+        return redirect(best["url"], code=302)
 
     except Exception as e:
-        return f"Hata: {str(e)}", 500
+        return f"Hata: {e}", 500
 
 
 PORT = int(os.environ.get("PORT", 7860))
 
 if __name__ == "__main__":
-    print("YouTube LIVE master m3u8 proxy çalışıyor")
     app.run(host="0.0.0.0", port=PORT)
